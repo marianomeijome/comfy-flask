@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>GenAI Workflow</title>
+</head>
+<body>
+    <h1>GenAI Workflow with Flask</h1>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <label for="prompt">Prompt:</label>
+        <input type="text" id="prompt" name="prompt" value="Elon musk smoking a joint"><br><br>
+
+        <label for="checkpoint">Select a checkpoint:</label>
+        <select id="checkpoint" name="checkpoint">
+            <option value="v1-5-pruned-emaonly-fp16.safetensors">v1-5-pruned-emaonly-fp16.safetensors</option>
+            <option value="Realistic_Vision_V6.0_NV_B1_fp16.safetensors">Realistic_Vision_V6.0_NV_B1_fp16.safetensors</option>
+            <option value="v1-5-pruned-emaonly.safetensors">v1-5-pruned-emaonly.safetensors</option>
+            <option value="sd_xl_base_1.0.safetensors">sd_xl_base_1.0.safetensors</option>
+        </select><br><br>
+
+        <label for="lora">Select a lora:</label>
+        <select id="lora" name="lora">
+            <option value="Hyper-SD15-1step-lora.safetensors">Hyper-SD15-1step-lora.safetensors</option>
+            <option value="Hyper-SDXL-1step-lora.safetensors">Hyper-SDXL-1step-lora.safetensors</option>
+            <option value="papi2.safetensors">papi2.safetensors</option>
+            <option value="TCD_SD15_LoRA.safetensors">TCD_SD15_LoRA.safetensors</option>
+            <option value="TQ_-_Stained_Glass_XL-000006.safetensors">TQ_-_Stained_Glass_XL-000006.safetensors</option>
+        </select><br><br>
+
+        <label for="webcam">Take a picture:</label>
+        <input type="file" id="webcam" name="webcam" accept="image/*" capture="user"><br><br>
+
+        <input type="submit" value="Generate Image">
+        
+    </form>
+    {% if generated_image %}
+    <h2>Generated Image:</h2>
+    <img src="data:image/png;base64,{{ generated_image }}" alt="Generated Image">
+    {% endif %}
+</body>
+</html>
