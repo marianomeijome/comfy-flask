@@ -2,10 +2,23 @@ body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     color: #333;
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     background-color: #f4f4f4;
+    display: flex;
+    gap: 20px;
+}
+
+.form-container {
+    width: 33%;
+}
+
+.image-container {
+    width: 67%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 h1 {
@@ -39,7 +52,7 @@ input[type="file"] {
 }
 
 input[type="submit"] {
-    background-color: #3498db;
+    background-color: #2ecc71;
     color: #fff;
     padding: 10px 15px;
     border: none;
@@ -49,7 +62,53 @@ input[type="submit"] {
 }
 
 input[type="submit"]:hover {
+    background-color: #27ae60;
+}
+
+#capture_button {
+    background-color: #3498db;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#capture_button:hover {
     background-color: #2980b9;
+}
+
+#clear_image_button {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#clear_image_button:hover {
+    background-color: #c0392b;
+}
+
+#video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#captured_preview {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 img {
@@ -57,6 +116,24 @@ img {
     height: auto;
     display: block;
     margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#captured_image_container,
+#generated_image_container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#captured_preview,
+#generated_image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
