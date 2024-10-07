@@ -217,7 +217,7 @@ def index():
         else:
             print("No input image found")
 
-    return render_template("index.html", generated_image=generated_image_b64)
+    return render_template("photobooth.html", generated_image=generated_image_b64)
 
 
 if __name__ == "__main__":
