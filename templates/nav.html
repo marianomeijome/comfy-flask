@@ -1,0 +1,28 @@
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('index') }}">
+        
+        <img src="{{ url_for('static', filename='img/SAS_Vertical_Framed_Logo_Yellow.svg') }}" width="100" height="100" alt="">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'photobooth' %}active{% endif %}" href="{{ url_for('photobooth') }}">Photobooth</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">SketchBooth</a>
+        </li>
+        <!-- Add more nav items as needed -->
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container-fluid">
+    <h1 class="text-center bg-light p-3">GenAI Demos</h1>
+</div>

@@ -69,90 +69,86 @@ from nodes import NODE_CLASS_MAPPINGS
 # Global variables to store loaded models
 loaded_checkpoint = None
 loaded_lora = None
-loaded_ipadapter = None
 
-
-def load_models(checkpoint_name, lora_name):
-    global loaded_checkpoint, loaded_lora, loaded_ipadapter
+def load_models(checkpoint_option, lora_option):
+    global loaded_checkpoint, loaded_lora
     
     with torch.inference_mode():
         if loaded_checkpoint is None:
             checkpointloadersimple = NODE_CLASS_MAPPINGS["CheckpointLoaderSimple"]()
-            loaded_checkpoint = checkpointloadersimple.load_checkpoint(
-                ckpt_name=checkpoint_name
-            )
+            loaded_checkpoint = checkpointloadersimple.load_checkpoint(ckpt_name=checkpoint_option)
         
         if loaded_lora is None:
             loraloadermodelonly = NODE_CLASS_MAPPINGS["LoraLoaderModelOnly"]()
             loaded_lora = loraloadermodelonly.load_lora_model_only(
-                lora_name=lora_name,
+                lora_name=lora_option,
                 strength_model=1,
                 model=get_value_at_index(loaded_checkpoint, 0),
             )
-        
-        if loaded_ipadapter is None:
-            ipadapterunifiedloaderfaceid = NODE_CLASS_MAPPINGS[
-                "IPAdapterUnifiedLoaderFaceID"
-            ]()
-            loaded_ipadapter = ipadapterunifiedloaderfaceid.load_models(
-                preset="FACEID PLUS V2",
-                lora_strength=1,
-                provider="CUDA",
-                model=get_value_at_index(loaded_lora, 0),
-            )
 
-
-def run_workflow(user_prompt, negative_prompt, input_image_path):
+def run_workflow(user_prompt, checkpoint_option, lora_option, webcam_image_path):
     with torch.inference_mode():
-        emptylatentimage = NODE_CLASS_MAPPINGS["EmptyLatentImage"]()
-        emptylatentimage_5 = emptylatentimage.generate(width=512, height=768, batch_size=1)
+        checkpointloadersimple = NODE_CLASS_MAPPINGS["CheckpointLoaderSimple"]()
+        checkpointloadersimple_14 = checkpointloadersimple.load_checkpoint(
+            ckpt_name=checkpoint_option
+        )
 
         cliptextencode = NODE_CLASS_MAPPINGS["CLIPTextEncode"]()
         cliptextencode_6 = cliptextencode.encode(
             text=user_prompt,
-            clip=get_value_at_index(loaded_checkpoint, 1),
+            clip=get_value_at_index(checkpointloadersimple_14, 1),
         )
 
         cliptextencode_7 = cliptextencode.encode(
-            text=negative_prompt,
-            clip=get_value_at_index(loaded_checkpoint, 1),
+            text="watermark, text\n",
+            clip=get_value_at_index(checkpointloadersimple_14, 1),
         )
 
         loadimage = NODE_CLASS_MAPPINGS["LoadImage"]()
-        loadimage_27 = loadimage.load_image(image=input_image_path)
-
-        ipadapterfaceid = NODE_CLASS_MAPPINGS["IPAdapterFaceID"]()
-        ipadapterfaceid_18 = ipadapterfaceid.apply_ipadapter(
-            weight=1,
-            weight_faceidv2=1.25,
-            weight_type="linear",
-            combine_embeds="concat",
-            start_at=0,
-            end_at=1,
-            embeds_scaling="V only",
-            model=get_value_at_index(loaded_ipadapter, 0),
-            ipadapter=get_value_at_index(loaded_ipadapter, 1),
-            image=get_value_at_index(loadimage_27, 0),
+        loadimage_34 = loadimage.load_image(
+            image=webcam_image_path
         )
 
-        ksampler = NODE_CLASS_MAPPINGS["KSampler"]()
-        ksampler_3 = ksampler.sample(
-            seed=2,
+        vaeencode = NODE_CLASS_MAPPINGS["VAEEncode"]()
+        vaeencode_12 = vaeencode.encode(
+            pixels=get_value_at_index(loadimage_34,0),
+            vae=get_value_at_index(checkpointloadersimple_14, 2),
+        )
+
+        loraloadermodelonly = NODE_CLASS_MAPPINGS["LoraLoaderModelOnly"]()
+        loraloadermodelonly_17 = loraloadermodelonly.load_lora_model_only(
+            lora_name=lora_option,
+            strength_model=1,
+            model=get_value_at_index(checkpointloadersimple_14, 0),
+        )
+
+        tcdmodelsamplingdiscrete = NODE_CLASS_MAPPINGS["TCDModelSamplingDiscrete"]()
+        samplercustom = NODE_CLASS_MAPPINGS["SamplerCustom"]()
+        vaedecode = NODE_CLASS_MAPPINGS["VAEDecode"]()
+
+        tcdmodelsamplingdiscrete_19 = tcdmodelsamplingdiscrete.patch(
             steps=1,
+            scheduler="simple",
+            denoise=0.5,
+            eta=0.8,
+            model=get_value_at_index(loraloadermodelonly_17, 0),
+        )
+
+        samplercustom_18 = samplercustom.sample(
+            add_noise=True,
+            noise_seed=random.randint(1, 2**64),
             cfg=1,
-            sampler_name="dpmpp_2m_sde",
-            scheduler="karras",
-            denoise=1,
-            model=get_value_at_index(ipadapterfaceid_18, 0),
+            model=get_value_at_index(tcdmodelsamplingdiscrete_19, 0),
             positive=get_value_at_index(cliptextencode_6, 0),
             negative=get_value_at_index(cliptextencode_7, 0),
-            latent_image=get_value_at_index(emptylatentimage_5, 0),
+            sampler=get_value_at_index(tcdmodelsamplingdiscrete_19, 1),
+            sigmas=get_value_at_index(tcdmodelsamplingdiscrete_19, 2),
+            latent_image=get_value_at_index(vaeencode_12, 0),
         )
 
-        vaedecode = NODE_CLASS_MAPPINGS["VAEDecode"]()
         vaedecode_8 = vaedecode.decode(
-            samples=get_value_at_index(ksampler_3, 0),
-            vae=get_value_at_index(loaded_checkpoint, 2),
+            samples=get_value_at_index(samplercustom_18, 0),
+            vae=get_value_at_index(checkpointloadersimple_14, 2),
         )
 
         tensor_image = get_value_at_index(vaedecode_8, 0)
@@ -161,43 +157,38 @@ def run_workflow(user_prompt, negative_prompt, input_image_path):
 
         pil_image = Image.fromarray(numpy_image)
         img_io = BytesIO()
-        pil_image.save(img_io, "PNG")
+        pil_image.save(img_io, 'PNG')
         img_io.seek(0)
         
         return img_io
 
-
-@app.route("/", methods=["GET", "POST"])
+@app.route('/', methods=['GET', 'POST'])
 def index():
     generated_image_b64 = None
-    if request.method == "POST":
-        user_prompt = request.form["prompt"]
-        negative_prompt = request.form.get(
-            "negative_prompt",
-            "blurry, noisy, lowres, messy, jpeg, artifacts, ill, distorted, malformed, naked",
-        )
-        checkpoint_option = request.form["checkpoint"]
-        lora_option = request.form["lora"]
-        image_source = request.form["image_source"]
+    if request.method == 'POST':
+        user_prompt = request.form['prompt']
+        checkpoint_option = request.form['checkpoint']
+        lora_option = request.form['lora']
+        image_source = request.form['image_source']
 
         print(f"Image source: {image_source}")
 
         # Use BASE_DIR to create an absolute path
-        image_save_path = os.path.join(BASE_DIR, "input", "image", "input_image.jpg")
+        image_save_path = os.path.join(BASE_DIR, 'input', 'image', 'input_image.jpg')
         os.makedirs(os.path.dirname(image_save_path), exist_ok=True)
 
-        if image_source == "upload":
-            uploaded_image = request.files["upload"]
+        if image_source == 'upload':
+            uploaded_image = request.files['upload']
             if uploaded_image:
                 uploaded_image.save(image_save_path)
                 print("Uploaded image saved")
             else:
                 print("No uploaded image found")
-        elif image_source == "webcam":
-            captured_image = request.form["captured_image"]
+        elif image_source == 'webcam':
+            captured_image = request.form['captured_image']
             if captured_image:
                 # Remove the "data:image/jpeg;base64," prefix
-                image_data = captured_image.split(",")[1]
+                image_data = captured_image.split(',')[1]
                 with open(image_save_path, "wb") as f:
                     f.write(base64.b64decode(image_data))
                 print("Webcam image saved")
@@ -207,18 +198,15 @@ def index():
         if os.path.exists(image_save_path):
             print(f"Input image saved to: {image_save_path}")
             load_models(checkpoint_option, lora_option)
-            generated_image = run_workflow(user_prompt, negative_prompt, image_save_path)
+            generated_image = run_workflow(user_prompt, checkpoint_option, lora_option, image_save_path)
 
             # Convert the image to base64 for embedding in HTML
             generated_image.seek(0)
-            generated_image_b64 = base64.b64encode(generated_image.getvalue()).decode(
-                "utf-8"
-            )
+            generated_image_b64 = base64.b64encode(generated_image.getvalue()).decode('utf-8')
         else:
             print("No input image found")
 
-    return render_template("photobooth.html", generated_image=generated_image_b64)
+    return render_template('index.html', generated_image=generated_image_b64)
 
-
-if __name__ == "__main__":
-    app.run(debug=False)
+if __name__ == '__main__':
+    app.run(debug=True)

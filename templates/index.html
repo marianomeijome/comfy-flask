@@ -4,180 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Add Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>GenAI Workflow</title>
 </head>
 <body>
-    <div class="form-container">
-        <h1>Stained Glass Portraits</h1>
-        <form action="/" method="post" enctype="multipart/form-data">
-            <label for="prompt">Prompt:</label>
-            <input type="text" id="prompt" name="prompt" value="stained glass portrait\n\nhigh quality 4k"><br><br>
+    {% include 'nav.html' %}
 
-            <label for="checkpoint">Select a checkpoint:</label>
-            <select id="checkpoint" name="checkpoint">
-                <option value="sd_xl_turbo_1.0_fp16.safetensors">sd_xl_turbo_1.0_fp16.safetensors</option>
-                <option value="v1-5-pruned-emaonly-fp16.safetensors">v1-5-pruned-emaonly-fp16.safetensors</option>
-                <option value="Realistic_Vision_V6.0_NV_B1_fp16.safetensors">Realistic_Vision_V6.0_NV_B1_fp16.safetensors</option>
-                <option value="v1-5-pruned-emaonly.safetensors">v1-5-pruned-emaonly.safetensors</option>
-                <option value="sd_xl_base_1.0.safetensors">sd_xl_base_1.0.safetensors</option>
-                
-            </select><br><br>
-
-            <label for="lora">Select a lora:</label>
-            <select id="lora" name="lora">
-                <option value="Stained-Glass-Portrait_SDXL_LoRA.safetensors">Stained-Glass-Portrait_SDXL_LoRA.safetensors</option>
-                <option value="Hyper-SD15-1step-lora.safetensors">Hyper-SD15-1step-lora.safetensors</option>
-                <option value="Hyper-SDXL-1step-lora.safetensors">Hyper-SDXL-1step-lora.safetensors</option>
-                <option value="papi2.safetensors">papi2.safetensors</option>
-                <option value="TCD_SD15_LoRA.safetensors">TCD_SD15_LoRA.safetensors</option>
-                
-            </select><br><br>
-
-            <label for="image_source">Image Source:</label>
-            <select id="image_source" name="image_source" onchange="toggleImageInput()">
-                <option value="upload">Upload Image</option>
-                <option value="webcam">Use Webcam</option>
-            </select><br><br>
-
-            <div id="upload_div">
-                <label for="upload">Upload an image:</label>
-                <input type="file" id="upload" name="upload" accept="image/*" onchange="handleFileUpload(this)"><br><br>
+    <div class="container">
+        <h4 class="mb-3 mt-3">Current Demos</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="https://placehold.co/600x400" class="card-img-top" alt="Photobooth">
+                    <div class="card-body">
+                        <h5 class="card-title">Photobooth</h5>
+                        <p class="card-text">Take a photo with your webcam or upload a selfie to create portraits in any style.</p>
+                        <a href="/photobooth" class="btn btn-primary">Go to Photobooth</a>
+                    </div>
+                </div>
             </div>
-
-            <div id="captured_image_container" style="display: none;">
-                <h2>Captured Image:</h2>
-                <img id="captured_preview">
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="https://placehold.co/600x400" class="card-img-top" alt="Sketchbooth">
+                    <div class="card-body">
+                        <h5 class="card-title">Sketchbooth</h5>
+                        <p class="card-text">Transform a simple sketch into a highly detailed work of art.</p>
+                        <a href="/sketchbooth" class="btn btn-primary">Go to Sketchbooth</a>
+                    </div>
+                </div>
             </div>
-
-            <div id="webcam_div" style="display: none;">
-                <video id="video" width="320" height="240"></video>
-                <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-                <button type="button" id="capture_button" onclick="captureImage()" disabled>Capture Image</button>
-            </div>
-
-            <div id="clear_image_div" style="display: none;">
-                <button type="button" id="clear_image_button" onclick="clearImage()">Clear Image</button>
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="https://placehold.co/600x400" class="card-img-top" alt="TBD">
+                    <div class="card-body">
+                        <h5 class="card-title">TBD</h5>
+                        <p class="card-text">Something sick, i'm sure.</p>
+                        <a href="/#" class="btn btn-primary">Go to TBD</a>
+                    </div>
+                </div>
             </div>
             
-            <input type="hidden" id="captured_image" name="captured_image">
-            
-            <input type="submit" value="Generate Image">
-            
-            
-        </form>
+        </div>
     </div>
 
-    <div class="image-container">
-        <div id="captured_image_container" style="display: none;">
-            <h2>Captured Image:</h2>
-            <img id="captured_preview">
-        </div>
-
-        {% if generated_image %}
-        <div id="generated_image_container">
-            <h2>Generated Image:</h2>
-            <img id="generated_image" src="data:image/png;base64,{{ generated_image }}" alt="Generated Image">
-        </div>
-        {% endif %}
-    </div>
-
-    <script>
-        let stream = null;
-        
-        function toggleImageInput() {
-            var source = document.getElementById('image_source').value;
-            document.getElementById('upload_div').style.display = source === 'upload' ? 'block' : 'none';
-            document.getElementById('webcam_div').style.display = source === 'webcam' ? 'block' : 'none';
-            document.getElementById('captured_image_container').style.display = 'none';
-            document.getElementById('clear_image_div').style.display = 'none';
-            if (source === 'webcam') {
-                startWebcam();
-            } else {
-                stopWebcam();
-            }
-        }
-        
-        function startWebcam() {
-            var video = document.getElementById('video');
-            var captureButton = document.getElementById('capture_button');
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(str) {
-                    stream = str;
-                    video.srcObject = stream;
-                    video.style.display = 'block';
-                    video.play();
-                    captureButton.disabled = false; // Enable the button
-                    console.log('Webcam started');
-                })
-                .catch(function(err) {
-                    console.log("An error occurred: " + err);
-                    captureButton.disabled = true; // Ensure button is disabled if there's an error
-                });
-        }
-        
-        function stopWebcam() {
-            var video = document.getElementById('video');
-            var captureButton = document.getElementById('capture_button');
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            video.style.display = 'none';
-            captureButton.disabled = true; // Disable the button
-            console.log('Webcam stopped');
-        }
-        
-        function captureImage() {
-            var video = document.getElementById('video');
-            var canvas = document.getElementById('canvas');
-            var capturedPreview = document.getElementById('captured_preview');
-            var context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, 320, 240);
-            var imageDataUrl = canvas.toDataURL('image/jpeg');
-            document.getElementById('captured_image').value = imageDataUrl;
-            capturedPreview.src = imageDataUrl;
-            document.getElementById('captured_image_container').style.display = 'block';
-            document.getElementById('clear_image_div').style.display = 'block';
-            video.style.display = 'none';
-            console.log('Image captured');
-            console.log('Preview src:', capturedPreview.src.substring(0, 100) + '...');
-            stopWebcam();
-        }
-        
-        function clearImage() {
-            document.getElementById('captured_image').value = '';
-            document.getElementById('captured_image_container').style.display = 'none';
-            document.getElementById('clear_image_div').style.display = 'none';
-            document.getElementById('upload').value = ''; // Clear the file input
-            
-            var source = document.getElementById('image_source').value;
-            if (source === 'webcam') {
-                startWebcam();
-            } else {
-                document.getElementById('upload_div').style.display = 'block';
-            }
-        }
-        
-        function handleFileUpload(input) {
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    var capturedPreview = document.getElementById('captured_preview');
-                    capturedPreview.src = e.target.result;
-                    document.getElementById('captured_image_container').style.display = 'block';
-                    document.getElementById('clear_image_div').style.display = 'block';
-                    document.getElementById('upload_div').style.display = 'none';
-                }
-                
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-        
-        // Initialize the correct display on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleImageInput();
-            console.log('Page loaded, image input toggled');
-        });
-    </script>
+    
 </body>
 </html>

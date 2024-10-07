@@ -4,83 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Add Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>GenAI Workflow</title>
 </head>
 <body>
-    <div class="form-container">
-        <h1>Stained Glass Portraits</h1>
-        <form action="/" method="post" enctype="multipart/form-data">
-            <label for="prompt">Prompt:</label>
-            <input type="text" id="prompt" name="prompt" value="stained glass portrait\n\nhigh quality 4k"><br><br>
+    {% include 'nav.html' %}
 
-            <label for="checkpoint">Select a checkpoint:</label>
-            <select id="checkpoint" name="checkpoint">
-                <option value="sd_xl_turbo_1.0_fp16.safetensors">sd_xl_turbo_1.0_fp16.safetensors</option>
-                <option value="v1-5-pruned-emaonly-fp16.safetensors">v1-5-pruned-emaonly-fp16.safetensors</option>
-                <option value="Realistic_Vision_V6.0_NV_B1_fp16.safetensors">Realistic_Vision_V6.0_NV_B1_fp16.safetensors</option>
-                <option value="v1-5-pruned-emaonly.safetensors">v1-5-pruned-emaonly.safetensors</option>
-                <option value="sd_xl_base_1.0.safetensors">sd_xl_base_1.0.safetensors</option>
+    <div class="container">
+        <h4 class="mb-3 mt-3">Photobooth - Webcam or Upload</h4>
+        <div class="row">
+            <form action="{{ url_for('photobooth') }}" method="post" enctype="multipart/form-data" id="generateForm" class="bg-white p-4 rounded shadow-sm col-md-4">
+                <label for="prompt" class="form-label">Prompt:</label>
+                <textarea type="text" id="prompt" name="prompt" rows="3" class="form-control mb-3">stained glass portrait&#13;&#10;high quality 4k</textarea>
+
+                <label for="checkpoint" class="form-label">Select a checkpoint:</label>
+                <select id="checkpoint" name="checkpoint" class="form-select mb-3">
+                    <option value="sd_xl_turbo_1.0_fp16.safetensors">sd_xl_turbo_1.0_fp16.safetensors</option>
+                    <option value="v1-5-pruned-emaonly-fp16.safetensors">v1-5-pruned-emaonly-fp16.safetensors</option>
+                    <option value="Realistic_Vision_V6.0_NV_B1_fp16.safetensors">Realistic_Vision_V6.0_NV_B1_fp16.safetensors</option>
+                    <option value="v1-5-pruned-emaonly.safetensors">v1-5-pruned-emaonly.safetensors</option>
+                    <option value="sd_xl_base_1.0.safetensors">sd_xl_base_1.0.safetensors</option>
+                    
+                </select>
+
+                <label for="lora" class="form-label">Select a lora:</label>
+                <select id="lora" name="lora" class="form-select mb-3">
+                    <option value="Stained-Glass-Portrait_SDXL_LoRA.safetensors">Stained-Glass-Portrait_SDXL_LoRA.safetensors</option>
+                    <option value="Hyper-SD15-1step-lora.safetensors">Hyper-SD15-1step-lora.safetensors</option>
+                    <option value="Hyper-SDXL-1step-lora.safetensors">Hyper-SDXL-1step-lora.safetensors</option>
+                    <option value="papi2.safetensors">papi2.safetensors</option>
+                    <option value="TCD_SD15_LoRA.safetensors">TCD_SD15_LoRA.safetensors</option>
+                    
+                </select>
+
+                <label for="image_source" class="form-label">Image Source:</label>
+                <select id="image_source" name="image_source" onchange="toggleImageInput()" class="form-select mb-3">
+                    <option value="upload">Upload Image</option>
+                    <option value="webcam">Use Webcam</option>
+                </select>
+
+                <div id="upload_div" class="mb-3">
+                    <label for="upload" class="form-label">Upload an image:</label>
+                    <input type="file" id="upload" name="upload" accept="image/*" onchange="handleFileUpload(this)" class="form-control">
+                </div>
+
+                <div id="captured_image_container" style="display: none;">
+                    <h2>Input Image:</h2>
+                    <img id="captured_preview">
+                </div>
+
+                <div id="webcam_div" style="display: none;">
+                    <video id="video" width="320" height="240"></video>
+                    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+                    <button type="button" class="btn btn-primary mb-3" id="capture_button" onclick="captureImage()" disabled>Capture Image</button>
+                </div>
+
+                <div id="clear_image_div" style="display: none;">
+                    <button type="button" class="btn btn-danger mb-3" id="clear_image_button" onclick="clearImage()">Clear Image</button>
+                </div>
                 
-            </select><br><br>
-
-            <label for="lora">Select a lora:</label>
-            <select id="lora" name="lora">
-                <option value="Stained-Glass-Portrait_SDXL_LoRA.safetensors">Stained-Glass-Portrait_SDXL_LoRA.safetensors</option>
-                <option value="Hyper-SD15-1step-lora.safetensors">Hyper-SD15-1step-lora.safetensors</option>
-                <option value="Hyper-SDXL-1step-lora.safetensors">Hyper-SDXL-1step-lora.safetensors</option>
-                <option value="papi2.safetensors">papi2.safetensors</option>
-                <option value="TCD_SD15_LoRA.safetensors">TCD_SD15_LoRA.safetensors</option>
+                <input type="hidden" id="captured_image" name="captured_image">
                 
-            </select><br><br>
-
-            <label for="image_source">Image Source:</label>
-            <select id="image_source" name="image_source" onchange="toggleImageInput()">
-                <option value="upload">Upload Image</option>
-                <option value="webcam">Use Webcam</option>
-            </select><br><br>
-
-            <div id="upload_div">
-                <label for="upload">Upload an image:</label>
-                <input type="file" id="upload" name="upload" accept="image/*" onchange="handleFileUpload(this)"><br><br>
-            </div>
-
+                <button type="submit" class="btn btn-success mb-3" id="generateButton">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Generate Image</span>
+                </button>
+            </form>
+        
+            <div class="image-container col-md-8">
             <div id="captured_image_container" style="display: none;">
-                <h2>Captured Image:</h2>
+                <h2>Input Image:</h2>
                 <img id="captured_preview">
             </div>
 
-            <div id="webcam_div" style="display: none;">
-                <video id="video" width="320" height="240"></video>
-                <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-                <button type="button" id="capture_button" onclick="captureImage()" disabled>Capture Image</button>
+            {% if generated_image %}
+            <div id="generated_image_container">
+                <h2>Generated Image:</h2>
+                <img id="generated_image" src="data:image/png;base64,{{ generated_image }}" alt="Generated Image">
             </div>
-
-            <div id="clear_image_div" style="display: none;">
-                <button type="button" id="clear_image_button" onclick="clearImage()">Clear Image</button>
+            {% endif %}
             </div>
-            
-            <input type="hidden" id="captured_image" name="captured_image">
-            
-            <input type="submit" value="Generate Image">
-            
-            
-        </form>
+        </div>
     </div>
 
-    <div class="image-container">
-        <div id="captured_image_container" style="display: none;">
-            <h2>Captured Image:</h2>
-            <img id="captured_preview">
-        </div>
-
-        {% if generated_image %}
-        <div id="generated_image_container">
-            <h2>Generated Image:</h2>
-            <img id="generated_image" src="data:image/png;base64,{{ generated_image }}" alt="Generated Image">
-        </div>
-        {% endif %}
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let stream = null;
         
@@ -177,6 +185,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             toggleImageInput();
             console.log('Page loaded, image input toggled');
+        });
+
+        document.getElementById('generateForm').addEventListener('submit', function(e) {
+            var button = document.getElementById('generateButton');
+            var spinner = button.querySelector('.spinner-border');
+            var buttonText = button.querySelector('.button-text');
+
+            button.disabled = true;
+            spinner.classList.remove('d-none');
+            buttonText.textContent = 'Generating...';
         });
     </script>
 </body>
